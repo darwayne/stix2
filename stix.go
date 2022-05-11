@@ -46,6 +46,12 @@ func NoSortOption() CollectionOption {
 	}
 }
 
+func NoUUIValidationOption() CollectionOption {
+	return func(c *Collection) {
+		c.noUUIDValidation = true
+	}
+}
+
 func DropCustomOption() CollectionOption {
 	return func(c *Collection) {
 		c.dropCustom = true
@@ -69,9 +75,10 @@ type Collection struct {
 	objects map[STIXType]map[Identifier]interface{}
 
 	// Options
-	noSort     bool
-	order      []Identifier
-	dropCustom bool
+	noSort           bool
+	order            []Identifier
+	dropCustom       bool
+	noUUIDValidation bool
 }
 
 // Get returns the object with matching ID or nil if it does not exist in the
@@ -92,7 +99,10 @@ func (c *Collection) Get(id Identifier) STIXObject {
 
 // Add adds or updates an object in the collection.
 func (c *Collection) Add(obj STIXObject) error {
-	if !HasValidIdentifier(obj) {
+	if c.noUUIDValidation && !HasValidIdentifierNoUUID(obj) {
+		return fmt.Errorf("%s has an invalid identifier", obj.GetID())
+	}
+	if !c.noUUIDValidation && !HasValidIdentifier(obj) {
 		return fmt.Errorf("%s has an invalid identifier", obj.GetID())
 	}
 
